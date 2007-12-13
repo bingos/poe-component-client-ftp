@@ -1,0 +1,22 @@
+--- 
+abstract: Implements an FTP client POE Component
+author: 
+  - Michael Ching <michaelc@wush.net>
+build_requires: 
+  Test::More: 0.47
+distribution_type: module
+generated_by: Module::Install version 0.68
+license: perl
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: POE-Component-Client-FTP
+no_index: 
+  directory: 
+    - inc
+    - t
+requires: 
+  Carp: 0
+  POE: 0.38
+  Socket: 0
+version: 0.11_01
