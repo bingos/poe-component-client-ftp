@@ -9,5 +9,5 @@ requires 'Carp' => 0;
 requires 'Socket' => 0;
 requires 'POE' => 0.38;
 my $value = prompt( 'Do you want to enable optional TLS support ( requires POE::Component::SSLify ) [y/N]?', 'N' );
-requires 'POE::Component::SSLify' => 0 if $value =~ /^y/i;
+requires 'POE::Component::SSLify' => 0.10 if $value =~ /^y/i;
 WriteAll();

@@ -209,7 +209,8 @@ sub spawn {
     if keys %params;
   
   eval {
-     require POE::Component::Client::FTP::TLSify if $tlscmd || $tlsdata;
+     require POE::Component::SSLify if $tlscmd || $tlsdata;
+     import POE::Component::SSLify qw( Client_SSLify );
   };
 
   if ($@) {
@@ -597,7 +598,7 @@ sub handler_authtls_success {
   delete $heap->{cmd_rw_wheel};
 
   eval { $heap->{tlscmd_sock} = 
-	POE::Component::Client::FTP::TLSify::Client_SSLify( @{$heap->{cmd_sock_wheel}}[0] ) };
+	Client_SSLify( @{$heap->{cmd_sock_wheel}}[0], 'tlsv1' ) };
   if ( $@ ) {
     print "Unable to SSLify it...\n";
   }
