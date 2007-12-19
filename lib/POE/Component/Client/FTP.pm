@@ -595,20 +595,18 @@ sub do_send_authtls {
 sub handler_authtls_success {
   my ($kernel, $heap, $input) = @_[KERNEL, HEAP, ARG0];
 
+  my $socket = $heap->{cmd_rw_wheel}->get_input_handle();
   delete $heap->{cmd_rw_wheel};
 
-  eval { $heap->{tlscmd_sock} = 
-	Client_SSLify( @{$heap->{cmd_sock_wheel}}[0], 'tlsv1' ) };
+  eval { $socket = Client_SSLify( $socket )};
   if ( $@ ) {
-    print "Unable to SSLify it...\n";
+    die "Unable to SSLify control connection: $@";
   }
 
   # set up the rw wheel again
-  # clear the timeout
-  $kernel->delay("timeout");
 
   $heap->{cmd_rw_wheel} = POE::Wheel::ReadWrite->new(
-      Handle     => $heap->{tlscmd_sock},
+      Handle     => $socket,
       Filter     => POE::Filter::Line->new( Literal => EOL ),
       Driver     => POE::Driver::SysRW->new(),
       InputEvent => 'cmd_input',
@@ -843,7 +841,25 @@ sub handler_complex_preliminary {
   send_event( $heap->{complex_stack}->{command}->[0] . "_server",
 	      $heap->{complex_stack}->{command}->[1] );
 
-  IO::Socket::SSL->start_SSL( @{$heap->{data_rw_wheel}}[0] ) if $heap->{tlsdata};
+  # sslify the data connection
+  my $socket = $heap->{data_rw_wheel}->get_input_handle();
+  delete $heap->{data_rw_wheel};
+  eval { $socket = Client_SSLify( $socket )};
+  if ( $@ ) {
+    die "Unable to SSLify data connection: $@";
+  }
+
+  # set up the rw wheel again
+
+  $heap->{data_rw_wheel} = POE::Wheel::ReadWrite->new(
+    Handle       => $socket,
+    Filter       => $heap->{filters}->{ $heap->{complex_stack}->{command}->[0] },
+    Driver       => POE::Driver::SysRW->new( BlockSize => $heap->{attr_blocksize} ),
+    InputEvent   => 'data_input',
+    ErrorEvent   => 'data_error',
+    FlushedEvent => 'data_flush'
+  );
+
   return;
 }
 
