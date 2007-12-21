@@ -20,7 +20,7 @@ use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 
 use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
 
-$VERSION = '0.11_02';
+$VERSION = '0.12';
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
