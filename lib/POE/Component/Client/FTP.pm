@@ -20,7 +20,7 @@ use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 
 use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
 
-$VERSION = '0.11_01';
+$VERSION = '0.11_02';
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
@@ -598,7 +598,7 @@ sub handler_authtls_success {
   my $socket = $heap->{cmd_rw_wheel}->get_input_handle();
   delete $heap->{cmd_rw_wheel};
 
-  eval { $socket = Client_SSLify( $socket )};
+  eval { $socket = Client_SSLify( $socket, 'tlsv1' )};
   if ( $@ ) {
     die "Unable to SSLify control connection: $@";
   }
@@ -844,7 +844,7 @@ sub handler_complex_preliminary {
   # sslify the data connection
   my $socket = $heap->{data_rw_wheel}->get_input_handle();
   delete $heap->{data_rw_wheel};
-  eval { $socket = Client_SSLify( $socket )};
+  eval { $socket = Client_SSLify( $socket, 'tlsv1' )};
   if ( $@ ) {
     die "Unable to SSLify data connection: $@";
   }
