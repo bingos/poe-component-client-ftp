@@ -1,5 +1,50 @@
 Revision history for Perl extension POE::Component::Client::FTP.
 
+========================
+2007-12-21 13:22:53 0.12
+========================
+
+  2007-12-21 13:22:07 (r5) by bingos; lib/POE/Component/Client/FTP.pm M
+
+    Bumped version number for release
+
+  2007-12-21 13:20:35 (r4) by bingos
+  lib/POE/Component/Client/FTP.pm M; META.yml D; inc D
+
+    Fixing the distro
+
+  2007-12-19 19:31:39 (r3) by scz; lib/POE/Component/Client/FTP.pm M
+
+    Added TLS for the data connection
+
+  2007-12-18 17:36:41 (r2) by bingos
+  lib/POE/Component/Client/FTP.pm M; lib/POE/Component/Client/FTP D;
+  MANIFEST M; Makefile.PL M
+
+    Removed TLSify
+
+  2007-12-13 17:50:37 (r1) by svn
+  README A; inc/Module A; /trunk A; inc/Module/Install/WriteAll.pm A; t
+  A; examples/list.pl A; t/99_pod.t A; inc A; examples/dotfer.pl A;
+  lib/POE/Component/Client/FTP/TLSify A; lib/POE/Component/Client/FTP.pm
+  A; examples A; inc/Module/Install.pm A; /branches A;
+  t/99_pod_coverage.t A; lib/POE/Component A;
+  inc/Module/Install/Makefile.pm A; inc/Module/Install/Metadata.pm A;
+  t/00_use.t A; lib/POE/Component/Client/FTP A; examples/sync.pl A;
+  inc/Module/Install A; lib A; MANIFEST A; Changes A;
+  inc/Module/Install/Fetch.pm A; lib/POE/Component/Client A;
+  inc/Module/Install/Can.pm A;
+  lib/POE/Component/Client/FTP/TLSify/ClientHandle.pm A;
+  inc/Module/Install/Win32.pm A; META.yml A; Makefile.PL A;
+  lib/POE/Component/Client/FTP/TLSify.pm A; inc/Module/Install/Base.pm A;
+  lib/POE A; t/99_test_kwalitee.t A; /tags A
+
+    Initial repository layout
+
+==============
+End of Excerpt
+==============
+
 0.10 (12/03/07) bingos
   - Fixed a bug introduced with the TLS support for data connections
   - Added optional requirement of IO::Socket::SSL to Makefile.PL
