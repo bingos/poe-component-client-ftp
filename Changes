@@ -1,6 +1,15 @@
 Revision history for Perl extension POE::Component::Client::FTP.
 
 ========================
+2008-01-08 14:06:35 0.14
+========================
+
+  2008-01-08 14:05:11 (r7) by bingos
+  lib/POE/Component/Client/FTP.pm M; MANIFEST M; Makefile.PL M; Changes M
+
+    Fixed problem with the TLS support
+
+========================
 2007-12-21 13:22:53 0.12
 ========================
 
@@ -15,7 +24,7 @@ Revision history for Perl extension POE::Component::Client::FTP.
 
   2007-12-19 19:31:39 (r3) by scz; lib/POE/Component/Client/FTP.pm M
 
-    Added TLS for the data connection
+    Added TLS for the data connection 
 
   2007-12-18 17:36:41 (r2) by bingos
   lib/POE/Component/Client/FTP.pm M; lib/POE/Component/Client/FTP D;

@@ -20,7 +20,7 @@ use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 
 use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
 
-$VERSION = '0.14';
+$VERSION = '0.18';
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
@@ -1138,11 +1138,8 @@ L<http://www.wush.net/poe/ftp>
 
 =head1 DESCRIPTION
 
-Client module for FTP
-
-=head1 CAVEATS
-
-Untested.
+POE::Component::Client::FTP is a L<POE> component that implements an non-blocking FTP client.
+One C<spawns> an FTP poco from within one's own POE session, asking to receive particular events.
 
 =head1 CONSTRUCTOR
 
@@ -1150,54 +1147,52 @@ Untested.
 
 =item spawn
 
-=back
+Creates a new POE::Component::Client::FTP session. Takes a number of named parameters:
 
-=head1 METHODS
+  Alias          - session name
 
-=over
+  Username       - account username
 
-=item Alias          - session name
+  Password       - account password
 
-=item Username       - account username
+  ConnectionMode - FTP_PASSIVE (default) or FTP_ACTIVE  
 
-=item Password       - account password
+  Transfermode   - FTP_MANUAL (default), FTP_ASCII, or FTP_BINARY
+                   If set to FTP_ASCII OR FTP_BINARY, will use specified
+                   before every file transfer.  If not set, you are
+                   responsible to manually post the mode.
+                   NOTE: THIS IS UNIMPLEMENTED AT THE TIME
 
-=item ConnectionMode - FTP_PASSIVE (default) or FTP_ACTIVE  
+  Filters        - a hashref matching signals with POE::Filter's
+                   If unspecified, reasonable selections will be made.
+                   Only filter currently useful is for ls, which parses
+                   common ls responses.  See samples/list.pl for example.
 
-=item Transfermode   - FTP_MANUAL (default), FTP_ASCII, or FTP_BINARY
-                       If set to FTP_ASCII OR FTP_BINARY, will use specified
-                       before every file transfer.  If not set, you are
-                       responsible to manually post the mode.
-                       NOTE: THIS IS UNIMPLEMENTED AT THE TIME
+  LocalAddr      - interface to listen on in active mode
 
-=item Filters        - a hashref matching signals with POE::Filter's
-                       If unspecified, reasonable selections will be made.
-                       Only filter currently useful is for ls, which parses
-                       common ls responses.  See samples/list.pl for example.
+  LocalPort      - port to listen on in active mode
 
-=item LocalAddr      - interface to listen on in active mode
+  RemoteAddr     - ftp server
 
-=item LocalPort      - port to listen on in active mode
+  RemotePort     - ftp port
 
-=item RemoteAddr     - ftp server
+  Timeout        - timeout for connection to server
 
-=item RemotePort     - ftp port
+  BlockSize      - sets the recieve buffer size.  see BUGS
 
-=item Timeout        - timeout for connection to server
+  Events         - events you are interested in receiving.  See OUTPUT.
 
-=item BlockSize      - sets the recieve buffer size.  see BUGS
+  TLS	     - Set to true for TLS supporting servers.
 
-=item Events         - events you are interested in receiving.  See OUTPUT.
-
-=item TLS	     - Set to true for TLS supporting servers.
-
-=item TLSData	     - Set to true for TLS supporting servers of data connections.
-
-=back
+  TLSData	     - Set to true for TLS supporting servers of data connections.
 
 TLS support requires the L<POE::Component::SSLify> module to be installed.
 
-=head1 INPUT
+=back
+
+=head1 INPUT EVENTS
+
+These are commands which the poco will accept events for:
 
 =over
 
@@ -1249,7 +1244,7 @@ and closed.
 
 =back
 
-=head1 OUTPUT
+=head1 OUTPUT EVENTS
 
 Output for connect consists of "connected" upon successful connection to
 server, and "connect_error" if the connection fails or times out.  Upon
@@ -1334,13 +1329,3 @@ Please report any other bugs through C<bug-POE-Component-Client-FTP@rt.cpan.org>
 Copyright (c) 2002 Michael Ching. All rights reserved. This program is free
 software; you can redistribute it and/or modify it under the same terms as
 Perl itself.
-
-
-
-
-
-
-
-
-
-
