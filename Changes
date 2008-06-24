@@ -1,4 +1,18 @@
-Revision history for Perl extension POE::Component::Client::FTP.
+========================
+2008-03-18 13:28:27 0.18
+========================
+
+  2008-03-18 13:27:55 (r10) by bingos
+  Makefile.PL M; xt/99_pod_coverage.t M
+
+    Pod coverage test fix. Updated prereqs. 
+
+  2008-03-18 13:21:44 (r9) by bingos
+  lib/POE/Component/Client/FTP.pm M; xt/99_pod.t A; xt/99_test_kwalitee.t
+  A; t/99_pod_coverage.t D; MANIFEST M; Makefile.PL M; t/99_pod.t D;
+  Changes M; t/99_test_kwalitee.t D; xt A; xt/99_pod_coverage.t A
+
+    Author tests moved to xt/ Tidied up the documentation a little bit. 
 
 ========================
 2008-01-08 14:06:35 0.14
@@ -53,82 +67,3 @@ Revision history for Perl extension POE::Component::Client::FTP.
 ==============
 End of Excerpt
 ==============
-
-0.10 (12/03/07) bingos
-  - Fixed a bug introduced with the TLS support for data connections
-  - Added optional requirement of IO::Socket::SSL to Makefile.PL
-
-0.09 (11/27/07) sc_
-  - Added the "quot" command, which sends any raw command to the sever.
-    "quot" is called on success "quot_error" on failure.
-  - Added the "stat" command. Some servers supports e.g directory listing on the control channel
-    with e.g "STAT -la dirname". Responses to this command often contain lines without a reply code,
-    there was no support for this earlier.
-  - Added the internal "authtls" state that issues "AUTH TLS" to the server before we log in
-    in order to initiate encryption on the command channel.
-    The TLS negotiation is started when a response to this command is recieved.
-  - Multiline responses are now sent to the handlers for simple commands (cd, delete, site, etc),
-    earlier only the last line of a response was returned
-  - The DEBUG_COMMAND debug mode now prints (in Net::FTP style) the text sent both to and from the
-    server on the command channel. Earlier it only printed commands sent to the server.
-  - The new DEBUG_DATA debug mode prints everything recieved on the data channel. (DEBUG did this earlier)
-  - The _done response for complex commands (ls dir put) are now sent to
-    the client first when a positive response (226) is recieved. Earlier it called e.g ls_done
-    as soon as the data connection was closed
-  - A timeout error string, e.g "Timeout (120 seconds)", are now sent to the connect_error event
-    on timeouts
-
-0.08 (11/17/07) bingos
-  - Fixed issues with multi-line replies
-
-0.07 (08/25/02)
-  - connected now posts the server message, that should be the last of those
-  - updated samples/list.pl to test connect message
-  - dir and ls commands are backwards from what most ftp clients use. I'll
-    probably fix it later if I need to do some other major change to break
-    backwards compatibility
-  - fixed stop state so the component should unload upon disconnect
-  - added code for timeout to work, have not tested it
-
-0.06 (07/15/02)
-  - active mode implemented
-  - more attributes respected
-  - fixed bug where failed login goes to ready state
-  - filters can be specified for complex events such as ls
-  - put and default complex handlers overlap are more generalized
-  - put_ready is now put_connected, interface should solidify by .1
-  - added status line information to login events
-  - updated samples for new put interface
-  - added a list sample which demonstrates incorrect logins and Filters
-  - made code work with older versions of POE
-  - added mode constants
-  - made POE::Filter::Ls helper class, grab it off cpan
-  - problems determining default ip in active mode to interface, see BUGS
-  - 0.07 should be out soon, completing many of the half-implemented
-    features
-
-0.05 (05/25/02)
-  - ls and dir now use Filter::Line, get and put use Filter::Stream
-  - put_close sends a put_flushed message so that if you close after
-    last data item had been flushed, it will be able to detect it
-  - adding more control over what to show in DEBUG modes
-  - added another sample demonstrating ls, put and get
-  - fixed a variety of bugs with _flushed being sent extraneously in
-    put methods
-	
-0.04 (05/23/02)
-  - added POE to prerequisite list, hopefully make test works now
-  - improved handling for put_ using a queue built on top of the Wheel
-  - included a sample script for tracking status of a put
-  - not using _begin anymore since _connected is what we really want
-  - mapped 'delete' to dele, I think thats the last of these...       
-
-0.03 (05/22/02)
-  - fixed 'cd' bug where cd was not mapped to cwd
-
-0.02 (05/20/02)
-  - more information in events outputted
-  - added some documentation
-
-0.01 (05/18/02)
-  - initial release

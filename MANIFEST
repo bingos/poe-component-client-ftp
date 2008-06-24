@@ -12,6 +12,7 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/POE/Component/Client/FTP.pm
+LICENSE
 Makefile.PL
 MANIFEST			This list of files
 META.yml
@@ -20,4 +21,3 @@ t/00_use.t
 t/01_recent.t
 xt/99_pod.t
 xt/99_pod_coverage.t
-xt/99_test_kwalitee.t

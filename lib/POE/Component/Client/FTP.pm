@@ -20,7 +20,7 @@ use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 
 use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
 
-$VERSION = '0.18';
+$VERSION = '0.20';
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
@@ -1324,8 +1324,10 @@ LocalAddr in the constructor and it all works fine.
 
 Please report any other bugs through C<bug-POE-Component-Client-FTP@rt.cpan.org>
 
-=head1 AUTHORS & COPYRIGHT
+=head1 LICENSE
 
-Copyright (c) 2002 Michael Ching. All rights reserved. This program is free
-software; you can redistribute it and/or modify it under the same terms as
+Copyright (c) 2002 Michael Ching. 
+Copyright (c) 2008 Chris Williams.
+
+This program is free software; you can redistribute it and/or modify it under the same terms as
 Perl itself.
