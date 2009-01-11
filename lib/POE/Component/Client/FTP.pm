@@ -20,7 +20,7 @@ use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 
 use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
 
-$VERSION = '0.20';
+$VERSION = '0.22';
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
@@ -208,14 +208,16 @@ sub spawn {
   carp "Unknown parameters: ", join( ', ', sort keys %params )
     if keys %params;
   
-  eval {
-     require POE::Component::SSLify if $tlscmd || $tlsdata;
-     import POE::Component::SSLify qw( Client_SSLify );
-  };
+  if ( $tlscmd || $tlsdata ) {
+    eval {
+       require POE::Component::SSLify;
+       import POE::Component::SSLify qw( Client_SSLify );
+    };
 
-  if ($@) {
+    if ($@) {
 	warn "TLS option specified, but there was a problem\n";
 	$tlscmd = 0; $tlsdata = 0;
+    }
   }
 
   my $self = bless {
