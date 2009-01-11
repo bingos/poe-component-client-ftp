@@ -7,6 +7,7 @@ version_from 'lib/POE/Component/Client/FTP.pm';
 abstract_from 'lib/POE/Component/Client/FTP.pm';
 author_tests 'xt';
 build_requires 'Test::More' => 0.47;
+perl_version '5.006';
 requires 'warnings::compat' => 0 if $] < 5.006;
 requires 'Exporter' => 0;
 requires 'vars' => 0;
@@ -27,4 +28,5 @@ if ( $network =~ /^y$/i ) {
   close FH;
 }
 clean_files 'network.tests';
+makemaker_args(dist => { PREOP => './tools/svn-log.perl > ./Changes' });
 WriteAll();
