@@ -19,5 +19,6 @@ META.yml
 README
 t/00_use.t
 t/01_recent.t
+tools/svn-log.perl
 xt/99_pod.t
 xt/99_pod_coverage.t
