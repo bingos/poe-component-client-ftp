@@ -8,17 +8,7 @@ abstract_from 'lib/POE/Component/Client/FTP.pm';
 author_tests 'xt';
 build_requires 'Test::More' => 0.47;
 perl_version '5.006';
-requires 'warnings::compat' => 0 if $] < 5.006;
-requires 'Exporter' => 0;
-requires 'vars' => 0;
-requires 'Carp' => 0;
-requires 'Socket' => 0;
 requires 'POE' => 0.38;
-requires 'POE::Wheel::SocketFactory' => 0;
-requires 'POE::Wheel::ReadWrite' => 0;
-requires 'POE::Filter::Stream' => 0;
-requires 'POE::Filter::Line' => 0;
-requires 'POE::Driver::SysRW' => 0;
 my $value = prompt( 'Do you want to enable optional TLS support ( requires POE::Component::SSLify ) [y/N]?', 'N' );
 requires 'POE::Component::SSLify' => 0.10 if $value =~ /^y/i;
 my $network = prompt( 'Do you want live network tests [N/y]?', 'N' );
@@ -28,5 +18,5 @@ if ( $network =~ /^y$/i ) {
   close FH;
 }
 clean_files 'network.tests';
-makemaker_args(dist => { PREOP => './tools/svn-log.perl > ./Changes' });
+makemaker_args(dist => { PREOP => "$^X ./tools/svn-log.perl > ./Changes" });
 WriteAll();

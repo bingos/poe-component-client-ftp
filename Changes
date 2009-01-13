@@ -1,4 +1,31 @@
 ========================
+2009-01-11 11:49:24 0.22
+========================
+
+  2009-01-11 11:47:50 (r16) by bingos; MANIFEST M
+
+    Forgot to update the MANIFEST
+
+  2009-01-11 11:46:56 (r15) by bingos
+  tools A; tools/svn-log.perl A; Makefile.PL M
+
+    Added tools/ directory
+
+  2009-01-11 11:42:21 (r14) by bingos; lib/POE/Component/Client/FTP.pm M
+
+    TLS detection was slightly wrong. Fixed
+
+========================
+2008-06-24 06:21:26 0.20
+========================
+
+  2008-06-24 06:19:28 (r12) by bingos
+  lib/POE/Component/Client/FTP.pm M; xt/99_test_kwalitee.t D; LICENSE A;
+  MANIFEST M; Changes M
+
+    Added License details and file
+
+========================
 2008-03-18 13:28:27 0.18
 ========================
 
