@@ -7,6 +7,7 @@ version_from 'lib/POE/Component/Client/FTP.pm';
 abstract_from 'lib/POE/Component/Client/FTP.pm';
 author_tests 'xt';
 build_requires 'Test::More' => 0.47;
+build_requires 'Test::POE::Server::TCP' => 0.12;
 perl_version '5.006';
 requires 'POE' => 0.38;
 my $value = prompt( 'Do you want to enable optional TLS support ( requires POE::Component::SSLify ) [y/N]?', 'N' );
