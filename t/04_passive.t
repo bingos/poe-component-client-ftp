@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 22;
+use Test::More tests => 15;
 #sub POE::Component::Client::FTP::DEBUG () { 1 }
 use POE qw(Component::Client::FTP Filter::Line);
 use Test::POE::Server::TCP;
@@ -8,10 +8,6 @@ use Test::POE::Server::TCP;
 my %tests = (
    'USER anonymous' 	=> '331 Any password will work',
    'PASS anon@anon.org' => '230 Any password will work',
-   'PWD' 		=> '257 "/pub/CPAN" is current directory.',
-   'NOOP'		=> '200 NOOP command successful',
-   'TYPE A'		=> '200 Type set to A',
-   'CWD /pub/CPAN'	=> '250 CWD command successful.',
    'QUIT' 		=> '221 Goodbye.',
 );
 
@@ -24,12 +20,15 @@ POE::Session->create(
 			testd_connected
 			testd_disconnected
 			testd_client_input
+                        testd_client_input
+                        datac_socket_failed
+                        datac_connected
+                        datac_client_flushed
 			connected
 			authenticated
-			pwd
-			cd
-			noop
-			type
+                        dir_connected
+                        dir_data
+                        dir_done
 		)],
    ],
    heap => { tests => \%tests, types => [ [ '200', 'Type set to A' ], [ '200', 'Type set to I' ] ] },
@@ -67,17 +66,9 @@ sub testd_registered {
 			connect_error 
 			authenticated 
 			login_error 
-			pwd
-			pwd_error
-			cd
-			cd_error
-			noop
-			noop_error
-			type
-			type_error
-			get_error 
-			get_data 
-			get_done
+                        dir_connected
+                        dir_data
+                        dir_done
 		  )],
         Filters => { get => POE::Filter::Line->new(), },
   );
@@ -108,6 +99,51 @@ sub testd_client_input {
      $heap->{testd}->disconnect( $id ) unless scalar keys %{ $heap->{tests} };
      $heap->{testd}->send_to_client( $id, $response );
   }
+  if ( $input =~ /^PASV/ ) {
+     $heap->{client} = $id;
+     $heap->{datac} = Test::POE::Server::TCP->spawn(
+	address => '127.0.0.1',
+	prefix => 'datac',
+     );
+     my $port = $heap->{datac}->port;
+     $heap->{testd}->send_to_client( $id, '227 Entering Passive Mode (' . join(',', split(/\./,'127.0.0.1'), (int($port / 256), $port % 256) ) . ').' );
+  }
+  if ( $input =~ /^NLST/ ) {
+    $heap->{testd}->send_to_client( $heap->{client}, '150 Opening ASCII mode data connection for file list' );
+    $heap->{client} = $id;
+    return unless $heap->{dataconn};
+    my @data = qw(
+        RECENT
+        modules
+        authors
+    );
+    $heap->{datac}->send_to_client( $heap->{dataconn}, shift @data );
+    $heap->{nlst} = \@data;
+  }
+  return;
+}
+
+sub datac_socket_failed {
+}
+
+sub datac_connected {
+  my ($kernel,$heap,$id) = @_[KERNEL,HEAP,ARG0];
+#  diag("Data connection: $id\n");
+  $heap->{dataconn} = $id;
+  return;
+}
+
+sub datac_client_flushed {
+  my ($kernel,$heap,$id) = @_[KERNEL,HEAP,ARG0];
+  my $data = shift @{ $heap->{nlst} };
+  if ( $data ) {
+    $heap->{datac}->send_to_client( $id, $data );
+    return;
+  }
+  delete $heap->{nlst};
+  $heap->{testd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
+  $heap->{datac}->shutdown();
+  delete $heap->{datac};
   return;
 }
 
@@ -129,38 +165,23 @@ sub authenticated {
   my ($kernel,$sender,$numeric,$message) = @_[KERNEL,SENDER,ARG0,ARG1];
   ok( $numeric eq '230', 'Correct authentication numeric' ); 
   ok( $message eq 'Any password will work', $message );
-  $kernel->post( $sender, 'noop' );
+  $kernel->post( $sender, 'dir' );
   return;
 }
 
-sub noop {
-  my ($kernel,$sender,$numeric,$message) = @_[KERNEL,SENDER,ARG0,ARG1];
-  ok( $numeric eq '200', 'Correct authentication numeric' ); 
-  ok( $message eq 'NOOP command successful', $message );
-  $kernel->post( $sender, 'type', 'A' );
+sub dir_connected {
+  pass("Server connected to data port");
   return;
 }
 
-sub type {
-  my ($kernel,$sender,$numeric,$message) = @_[KERNEL,SENDER,ARG0,ARG1];
-  ok( $numeric eq '200', 'Correct type numeric' ); 
-  ok( $message eq 'Type set to A', $message );
-  $kernel->post( $sender, 'cd', '/pub/CPAN' );
+sub dir_data {
+  pass("Data: " . $_[ARG0]);
   return;
 }
 
-sub cd {
-  my ($kernel,$sender,$numeric,$message) = @_[KERNEL,SENDER,ARG0,ARG1];
-  ok( $numeric eq '250', 'Correct cwd numeric' ); 
-  ok( $message eq 'CWD command successful.', $message );
-  $kernel->post( $sender, 'pwd' );
-  return;
-}
-
-sub pwd {
-  my ($kernel,$sender,$numeric,$message) = @_[KERNEL,SENDER,ARG0,ARG1];
-  ok( $numeric eq '257', 'Correct pwd numeric' ); 
-  ok( $message eq '"/pub/CPAN" is current directory.', $message );
+sub dir_done {
+  my ($kernel,$heap,$sender) = @_[KERNEL,HEAP,SENDER];
+  pass("dir done");
   $kernel->post( $sender, 'quit' );
   return;
 }

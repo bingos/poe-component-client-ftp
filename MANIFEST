@@ -20,6 +20,8 @@ README
 t/00_use.t
 t/01_recent.t
 t/02_simple.t
+t/03_active.t
+t/04_passive.t
 tools/svn-log.perl
 xt/99_pod.t
 xt/99_pod_coverage.t
