@@ -16,11 +16,11 @@ POE::Session->create(
 	main => [qw(
 			_start 
 			_stop
-			testd_registered 
-			testd_connected
-			testd_disconnected
-			testd_client_input
-                        testd_client_input
+			ftpd_registered 
+			ftpd_connected
+			ftpd_disconnected
+			ftpd_client_input
+                        ftpd_client_input
                         datac_socket_failed
                         datac_connected
                         datac_client_flushed
@@ -39,11 +39,12 @@ exit 0;
 
 sub _start {
   my $heap = $_[HEAP];
-  $heap->{testd} = Test::POE::Server::TCP->spawn(
+  $heap->{ftpd} = Test::POE::Server::TCP->spawn(
 #    filter => POE::Filter::Line->new,
     address => '127.0.0.1',
+    prefix  => 'ftpd',
   );
-  my $port = $heap->{testd}->port;
+  my $port = $heap->{ftpd}->port;
   $heap->{remote_port} = $port;
   return;
 }
@@ -53,7 +54,7 @@ sub _stop {
   return;
 }
 
-sub testd_registered {
+sub ftpd_registered {
   my ($kernel,$heap) = @_[KERNEL,HEAP];
   POE::Component::Client::FTP->spawn(
         Alias => 'ftpclient' . $_[SESSION]->ID(),
@@ -75,7 +76,7 @@ sub testd_registered {
   return;
 }
 
-sub testd_connected {
+sub ftpd_connected {
   my ($kernel,$heap,$id,$client_ip,$client_port,$server_ip,$server_port) = @_[KERNEL,HEAP,ARG0..ARG4];
   diag("$client_ip,$client_port,$server_ip,$server_port\n");
   my @banner = (
@@ -86,18 +87,18 @@ sub testd_connected {
 	'220 You will be disconnected after 30 minutes of inactivity.',
   );
   pass("Client connected");
-  $heap->{testd}->send_to_client( $id, $_ ) for @banner;
+  $heap->{ftpd}->send_to_client( $id, $_ ) for @banner;
   return;
 }
 
-sub testd_client_input {
+sub ftpd_client_input {
   my ($kernel, $heap, $id, $input) = @_[KERNEL, HEAP, ARG0, ARG1];
   diag($input);
   if ( defined $heap->{tests}->{ $input } ) {
      pass($input);
      my $response = delete $heap->{tests}->{ $input };
-     $heap->{testd}->disconnect( $id ) unless scalar keys %{ $heap->{tests} };
-     $heap->{testd}->send_to_client( $id, $response );
+     $heap->{ftpd}->disconnect( $id ) unless scalar keys %{ $heap->{tests} };
+     $heap->{ftpd}->send_to_client( $id, $response );
   }
   if ( $input =~ /^PASV/ ) {
      $heap->{client} = $id;
@@ -106,10 +107,10 @@ sub testd_client_input {
 	prefix => 'datac',
      );
      my $port = $heap->{datac}->port;
-     $heap->{testd}->send_to_client( $id, '227 Entering Passive Mode (' . join(',', split(/\./,'127.0.0.1'), (int($port / 256), $port % 256) ) . ').' );
+     $heap->{ftpd}->send_to_client( $id, '227 Entering Passive Mode (' . join(',', split(/\./,'127.0.0.1'), (int($port / 256), $port % 256) ) . ').' );
   }
   if ( $input =~ /^NLST/ ) {
-    $heap->{testd}->send_to_client( $heap->{client}, '150 Opening ASCII mode data connection for file list' );
+    $heap->{ftpd}->send_to_client( $heap->{client}, '150 Opening ASCII mode data connection for file list' );
     $heap->{client} = $id;
     return unless $heap->{dataconn};
     my @data = qw(
@@ -141,16 +142,16 @@ sub datac_client_flushed {
     return;
   }
   delete $heap->{nlst};
-  $heap->{testd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
+  $heap->{ftpd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
   $heap->{datac}->shutdown();
   delete $heap->{datac};
   return;
 }
 
-sub testd_disconnected {
+sub ftpd_disconnected {
   my ($kernel,$heap) = @_[KERNEL,HEAP];
   pass("Disconnected");
-  $heap->{testd}->shutdown();
+  $heap->{ftpd}->shutdown();
   return;
 }
 
@@ -176,6 +177,7 @@ sub dir_connected {
 
 sub dir_data {
   pass("Data: " . $_[ARG0]);
+  diag($_[ARG0] . "\n");
   return;
 }
 

@@ -82,7 +82,7 @@ my $state_map =
 
 		map ( { $_ => \&do_simple_command }
 		      qw{ cd cdup delete mdtm mkdir noop
-			  pwd rmdir site size stat type quit quot }
+			  pwd rmdir site size stat syst type quit quot }
 		    ),
 
 		map ( { $_ => \&do_complex_command }
@@ -296,8 +296,7 @@ sub do_stop {
 
   delete $heap->{cmd_rw_wheel};
   delete $heap->{cmd_sock_wheel};
-  delete $heap->{data_rw_wheel};
-  delete $heap->{data_sock_wheel};
+  clean_up_complex_cmd();
 
   $poe_kernel->alias_remove( $heap->{alias} );
   return;
@@ -311,8 +310,7 @@ sub handler_cmd_input {
 
   my $coderef;
 
-  $input =~ s/^(\d\d\d)(.?)//o;
-  my ($code, $more) = ($1, $2);
+  my ($code, $more) = parse_cmd_string(\$input);
 
   $input =~ s/^ // if defined $more && $more eq "-";
 
@@ -472,8 +470,7 @@ sub handler_put_flushed {
   elsif ($heap->{data_suicidal}) {
     warn "killing suicidal socket" . $heap->{data_rw_wheel}->get_driver_out_octets() if DEBUG;
 
-    delete $heap->{data_sock_wheel};
-    delete $heap->{data_rw_wheel};
+    clean_up_complex_cmd();
     $heap->{data_suicidal} = 0;
 
     send_event("put_closed",
@@ -491,8 +488,7 @@ sub handler_put_data_error {
   send_event( "put_error", $error,
 	      $heap->{complex_stack}->{command}->[1] );
 
-  delete $heap->{data_sock_wheel};
-  delete $heap->{data_rw_wheel};
+  clean_up_complex_cmd();
   goto_state("ready");
   return;
 }
@@ -810,8 +806,6 @@ sub handler_complex_success {
     command($heap->{complex_stack}->{command});
   }
   else {
-    send_event( $heap->{complex_stack}->{command}->[0] . "_done",
-                $heap->{complex_stack}->{command}->[1] );
     goto_state("ready");
   }
   return;
@@ -828,9 +822,7 @@ sub handler_complex_failure {
 	      $status, $line,
 	      $heap->{complex_stack}->{command}->[1] );
 
-  delete $heap->{data_sock_wheel};
-  delete $heap->{data_rw_wheel};
-
+  clean_up_complex_cmd();
   goto_state("ready");
   return;
 }
@@ -893,8 +885,7 @@ sub handler_complex_connect_error {
   send_event( $heap->{complex_stack}->{command}->[0] . "_error", $error,
 	      $heap->{complex_stack}->{command}->[1] );
 
-  delete $heap->{data_sock_wheel};
-  delete $heap->{data_rw_wheel};
+  clean_up_complex_cmd();
   goto_state("ready");
   return;
 }
@@ -913,9 +904,11 @@ sub handler_complex_list_data {
 sub handler_complex_list_error {
   my ($kernel, $heap, $input) = @_[KERNEL, HEAP, ARG0];
   warn "error: complex_list: $input" if DEBUG;
+  send_event( $heap->{complex_stack}->{command}->[0] . "_done",
+	      $heap->{complex_stack}->{command}->[1] );
 
-  delete $heap->{data_sock_wheel};
-  delete $heap->{data_rw_wheel};
+  clean_up_complex_cmd();
+  dequeue_complex_cmd();
   return;
 }
 
@@ -960,8 +953,15 @@ sub dequeue_event {
 # if active session knows how to handle this event, dispatch it to them
 # if not, enqueue the event
 sub dispatch {
-  my ($kernel, $heap, $state) = @_[KERNEL, HEAP, STATE];
+  my ($kernel, $heap, $state, $input) = @_[KERNEL, HEAP, STATE, ARG0];
 
+  if ($state eq 'cmd_input' && defined $heap->{data_rw_wheel} ) {
+      my ($code, $msg) = parse_cmd_string(\$input);
+      if ( substr($code, 0, 1) == 2 ) {
+        enqueue_complex_cmd(@_);
+        return;
+      }
+  }
   my $coderef = ( $state_map->{ $heap->{state} }->{$state} ||
 		  $state_map->{global}->{$state} ||
 		  \&enqueue_event );
@@ -1060,6 +1060,37 @@ sub establish_data_conn {
     command("PORT " . join ",", @addr, @port);
   }
   return;
+}
+
+sub parse_cmd_string {
+  my $string = shift;
+  $$string =~ s/^(\d\d\d)(.?)//o;
+  my ($code, $more) = ($1, $2);
+  return ($code, $more);
+}
+
+sub clean_up_complex_cmd {
+  my $heap = $poe_kernel->get_active_session()->get_heap();
+  delete $heap->{data_sock_wheel};
+  delete $heap->{data_rw_wheel};
+  $heap->{complex_stack} = {};
+}
+
+sub enqueue_complex_cmd {
+  my $heap = $poe_kernel->get_active_session()->get_heap();
+  warn "enqueue_complex_cmd $_[STATE]" if DEBUG;
+  $heap->{pending_complex_cmd} = \@_;
+}
+
+sub dequeue_complex_cmd {
+  my $heap = $poe_kernel->get_active_session()->get_heap();
+  return unless $heap->{pending_complex_cmd};
+
+  my $state = $heap->{pending_complex_cmd}->[STATE];
+  warn "dequeue_complex_cmd $state" if DEBUG;
+  my @event = @{ $heap->{pending_complex_cmd} };
+  $heap->{pending_complex_cmd} = undef;
+  dispatch( @event );
 }
 
 1;
@@ -1198,48 +1229,50 @@ These are commands which the poco will accept events for:
 
 =over
 
-=item cd [path]
+=item C<cd [path]>
 
-=item cdup
+=item C<cdup>
 
-=item delete [filename]
+=item C<delete [filename]>
 
-=item dir
+=item C<dir>
 
-=item get [filename]
+=item C<get [filename]>
 
-=item ls
+=item C<ls>
 
-=item mdtm [filename]
+=item C<mdtm [filename]>
 
-=item mkdir [dir name]
+=item C<mkdir [dir name]>
 
-=item mode [active passive]
+=item C<mode [active passive]>
 
-=item noop
+=item C<noop>
 
-=item pwd
+=item C<pwd>
 
-=item rmdir [dir name]
+=item C<rmdir [dir name]>
 
-=item site [command]
+=item C<site [command]>
 
-=item size [filename]
+=item C<size [filename]>
 
-=item stat [command]
+=item C<stat [command]>
 
-=item type [A|I]
+=item C<syst>
 
-=item quit
+=item C<type [A|I]>
 
-=item quot [command]
+=item C<quit>
 
-=item put_data
+=item C<quot [command]>
+
+=item C<put_data>
 
 After receiving a put_connected event you can post put_data events to send 
 data to the server.
 
-=item put_close
+=item C<put_close>
 
 Closes the data connection.  put_closed will be emit when connection is flushed
 and closed.

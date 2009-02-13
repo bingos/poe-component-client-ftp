@@ -22,6 +22,7 @@ t/01_recent.t
 t/02_simple.t
 t/03_active.t
 t/04_passive.t
+t/05_ready_early.t
 tools/svn-log.perl
 xt/99_pod.t
 xt/99_pod_coverage.t

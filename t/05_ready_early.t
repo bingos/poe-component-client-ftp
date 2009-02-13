@@ -4,7 +4,6 @@ use Test::More tests => 15;
 #sub POE::Component::Client::FTP::DEBUG () { 1 }
 use POE qw(Component::Client::FTP Filter::Line);
 use Test::POE::Server::TCP;
-use Test::POE::Client::TCP;
 
 my %tests = (
    'USER anonymous' 	=> '331 Any password will work',
@@ -21,14 +20,15 @@ POE::Session->create(
 			ftpd_connected
 			ftpd_disconnected
 			ftpd_client_input
-			datac_socket_failed
-			datac_connected
-			datac_flushed
+                        ftpd_client_input
+                        datac_socket_failed
+                        datac_connected
+                        datac_client_flushed
 			connected
 			authenticated
-			dir_connected
-			dir_data
-			dir_done
+                        dir_connected
+                        dir_data
+                        dir_done
 		)],
    ],
    heap => { tests => \%tests, types => [ [ '200', 'Type set to A' ], [ '200', 'Type set to I' ] ] },
@@ -61,18 +61,15 @@ sub ftpd_registered {
         Username => 'anonymous',
         Password => 'anon@anon.org',
         RemoteAddr => '127.0.0.1',
-        LocalAddr => '127.0.0.1',
-	ConnectionMode => FTP_ACTIVE,
 	RemotePort => $heap->{remote_port},
         Events => [qw(
 			connected 
 			connect_error 
 			authenticated 
 			login_error 
-			dir_connected
-			dir_data
-			dir_error
-			dir_done
+                        dir_connected
+                        dir_data
+                        dir_done
 		  )],
         Filters => { get => POE::Filter::Line->new(), },
   );
@@ -103,18 +100,27 @@ sub ftpd_client_input {
      $heap->{ftpd}->disconnect( $id ) unless scalar keys %{ $heap->{tests} };
      $heap->{ftpd}->send_to_client( $id, $response );
   }
-  if ( $input =~ /^PORT/ ) {
-    my (@ip, @port);
-    (@ip[0..3], @port[0..1]) = $input =~ /(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/;
-    my $ip = join '.', @ip;
-    my $port = $port[0]*256 + $port[1];
-    diag("$ip $port\n");
-    $heap->{active_port} = { $id => [ address => $ip, port => $port ] };
-    $heap->{ftpd}->send_to_client( $id, '200 PORT command successful' );
+  if ( $input =~ /^PASV/ ) {
+     $heap->{client} = $id;
+     $heap->{datac} = Test::POE::Server::TCP->spawn(
+	address => '127.0.0.1',
+	prefix => 'datac',
+     );
+     my $port = $heap->{datac}->port;
+     $heap->{ftpd}->send_to_client( $id, '227 Entering Passive Mode (' . join(',', split(/\./,'127.0.0.1'), (int($port / 256), $port % 256) ) . ').' );
   }
   if ( $input =~ /^NLST/ ) {
-    $heap->{datac} = Test::POE::Client::TCP->spawn( prefix => 'datac', autoconnect => 1, @{ $heap->{active_port}->{ $id } }  );
+    $heap->{ftpd}->send_to_client( $heap->{client}, '150 Opening ASCII mode data connection for file list' );
     $heap->{client} = $id;
+    return unless $heap->{dataconn};
+    my @data = qw(
+        RECENT
+        modules
+        authors
+    );
+    $heap->{datac}->send_to_client( $heap->{dataconn}, shift @data );
+    $heap->{ftpd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
+    $heap->{nlst} = \@data;
   }
   return;
 }
@@ -123,27 +129,21 @@ sub datac_socket_failed {
 }
 
 sub datac_connected {
-  my ($kernel,$heap) = @_[KERNEL,HEAP];
-  $heap->{ftpd}->send_to_client( $heap->{client}, '150 Opening ASCII mode data connection for file list' );
-  my @data = qw(
-	RECENT
-	modules
-	authors
-  );
-  $heap->{datac}->send_to_server( shift @data );
-  $heap->{nlst} = \@data;
+  my ($kernel,$heap,$id) = @_[KERNEL,HEAP,ARG0];
+#  diag("Data connection: $id\n");
+  $heap->{dataconn} = $id;
   return;
 }
 
-sub datac_flushed {
+sub datac_client_flushed {
   my ($kernel,$heap,$id) = @_[KERNEL,HEAP,ARG0];
   my $data = shift @{ $heap->{nlst} };
   if ( $data ) {
-    $heap->{datac}->send_to_server( $data );
+    $heap->{datac}->send_to_client( $id, $data );
     return;
   }
   delete $heap->{nlst};
-  $heap->{ftpd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
+#  $heap->{ftpd}->send_to_client( $heap->{client}, '226 Closing data connection.' );
   $heap->{datac}->shutdown();
   delete $heap->{datac};
   return;
