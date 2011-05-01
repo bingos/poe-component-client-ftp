@@ -3,6 +3,7 @@ use inc::Module::Install;
 name 'POE-Component-Client-FTP';
 author 'Michael Ching <michaelc@wush.net>';
 license 'perl';
+auto_license holder => 'Michael Ching and Chris Williams';
 version_from 'lib/POE/Component/Client/FTP.pm';
 abstract_from 'lib/POE/Component/Client/FTP.pm';
 author_tests 'xt';
@@ -21,4 +22,6 @@ if ( $network =~ /^y$/i ) {
 }
 clean_files 'network.tests';
 makemaker_args(dist => { PREOP => "$^X ./tools/svn-log.perl > ./Changes" });
+auto_provides;
+githubmeta;
 WriteAll();
