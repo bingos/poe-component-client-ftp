@@ -7,6 +7,8 @@
 
 package POE::Component::Client::FTP;
 
+#ABSTRACT: Implements an FTP client POE Component
+
 use strict;
 use warnings;
 
@@ -18,9 +20,7 @@ use Socket;
 use POE qw(Wheel::SocketFactory Wheel::ReadWrite
 	   Filter::Stream Filter::Line Driver::SysRW);
 
-use vars qw(@ISA @EXPORT $VERSION $poe_kernel);
-
-$VERSION = '0.22';
+use vars qw(@ISA @EXPORT $poe_kernel);
 
 @ISA = qw(Exporter);
 @EXPORT = qw(FTP_PASSIVE FTP_ACTIVE FTP_MANUAL FTP_ASCII FTP_BINARY);
@@ -96,8 +96,8 @@ my $state_map =
 
     put => { data_flush         => \&handler_put_flushed,
 	     data_error         => \&handler_put_data_error,
-	     
-             put_data           => \&do_put_data,
+
+       put_data           => \&do_put_data,
 	     put_close          => \&do_put_close,
 
 	     data_connected     => \&handler_complex_connected,
@@ -207,7 +207,7 @@ sub spawn {
   # Make sure the user didn't make a typo on parameters
   carp "Unknown parameters: ", join( ', ', sort keys %params )
     if keys %params;
-  
+
   if ( $tlscmd || $tlsdata ) {
     eval {
        require POE::Component::SSLify;
@@ -256,7 +256,7 @@ sub spawn {
 
       events          => { $sender => \%register }
   }, $class;
-  
+
   $self->{session_id} = POE::Session->create (
     inline_states => map_all($state_map, \&dispatch),
 
@@ -315,7 +315,7 @@ sub handler_cmd_input {
   $input =~ s/^ // if defined $more && $more eq "-";
 
   $heap->{ftp_message} .= "$input\n";
-    
+
   return unless defined $code && defined $more && $more eq " ";
 
   $heap->{ftp_message} =~ s/\s+$//;
@@ -565,7 +565,7 @@ sub handler_init_success {
   my $status = substr($input, 0, 3);
   my $line = substr($input, 4);
 
-  send_event( "connected", 
+  send_event( "connected",
 	      $status, $line );
 
 
@@ -860,7 +860,7 @@ sub handler_complex_preliminary {
 # data connection established
 sub handler_complex_connected {
   my ($kernel, $heap, $socket) = @_[KERNEL, HEAP, ARG0];
-  
+
   $heap->{data_rw_wheel} = POE::Wheel::ReadWrite->new(
     Handle       => $socket,
     Filter       => $heap->{filters}->{ $heap->{complex_stack}->{command}->[0] },
@@ -1011,10 +1011,10 @@ sub command {
     unshift @{$heap->{stack}}, [ $command, @$cmd_args ];
 
     $command = shift( @$cmd_args ) if $command eq "QUOT";
- 
+
     $command = $command_map{$command} || $command;
     my $cmdstr = join( ' ', $command, @$cmd_args ? @$cmd_args : () );
- 
+
     warn ">>> $cmdstr\n" if DEBUG_COMMAND;
 
     $heap->{cmd_rw_wheel}->put($cmdstr);
@@ -1095,11 +1095,73 @@ sub dequeue_complex_cmd {
 
 1;
 
-__END__
+=pod
 
-=head1 NAME
+=begin Pod::Coverage
 
-POE::Component::Client::FTP - Implements an FTP client POE Component
+       DEBUG
+       DEBUG_COMMAND
+       DEBUG_DATA
+       EOL
+       FTP_ACTIVE
+       FTP_ASCII
+       FTP_BINARY
+       FTP_MANUAL
+       FTP_PASSIVE
+       clean_up_complex_cmd
+       command
+       dequeue_complex_cmd
+       dequeue_event
+       dispatch
+       do_complex_command
+       do_init_start
+       do_login_send_password
+       do_login_send_username
+       do_put
+       do_put_close
+       do_put_data
+       do_rename
+       do_send_authtls
+       do_send_pbsz
+       do_send_prot
+       do_set_attribute
+       do_simple_command
+       do_stop
+       enqueue_complex_cmd
+       enqueue_event
+       establish_data_conn
+       goto_state
+       handler_authtls_failure
+       handler_authtls_success
+       handler_cmd_error
+       handler_cmd_input
+       handler_complex_connect_error
+       handler_complex_connected
+       handler_complex_failure
+       handler_complex_flushed
+       handler_complex_list_data
+       handler_complex_list_error
+       handler_complex_preliminary
+       handler_complex_success
+       handler_init_connected
+       handler_init_error
+       handler_init_success
+       handler_login_failure
+       handler_login_success
+       handler_pbsz_prot_failure
+       handler_pbsz_prot_success
+       handler_put_data_error
+       handler_put_flushed
+       handler_rename_failure
+       handler_rename_intermediate
+       handler_rename_success
+       handler_simple_failure
+       handler_simple_success
+       map_all
+       parse_cmd_string
+       send_event
+
+=end Pod::Coverage
 
 =head1 SYNOPSIS
 
@@ -1269,7 +1331,7 @@ These are commands which the poco will accept events for:
 
 =item C<put_data>
 
-After receiving a put_connected event you can post put_data events to send 
+After receiving a put_connected event you can post put_data events to send
 data to the server.
 
 =item C<put_close>
@@ -1359,10 +1421,4 @@ LocalAddr in the constructor and it all works fine.
 
 Please report any other bugs through C<bug-POE-Component-Client-FTP@rt.cpan.org>
 
-=head1 LICENSE
-
-Copyright (c) 2002 Michael Ching. 
-Copyright (c) 2008 Chris Williams.
-
-This program is free software; you can redistribute it and/or modify it under the same terms as
-Perl itself.
+=cut
